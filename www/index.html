@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belajar Ceria 2 — Nama-nama Binatang (4-6 Tahun)</title>
+<!-- Belajar Ceria 2 — Jilid 2: Nama-nama Binatang — prototipe v1.0 (BC2-V1.0) — dwibahasa, 100 hewan, 100 soal per sesi, suara HP (Web Speech API) -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "Arial Rounded MT Bold", "Helvetica Rounded", Arial, sans-serif;
+    background: linear-gradient(180deg, #7ED6FF 0%, #FFF3B0 55%, #FFE08A 100%);
+    min-height: 100vh; color: #333; padding: 14px 12px 30px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .page { display: none; }
+  .page.on { display: block; animation: masuk .25s ease; }
+  @keyframes masuk { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  .pop { animation: pop .35s ease; }
+
+  /* ---- header ---- */
+  header { text-align: center; padding: 10px 0 4px; }
+  .logo { font-size: 40px; font-weight: 900; color: #FF6B35; text-shadow: 2px 2px 0 #fff; letter-spacing: 1px; }
+  .tagline { font-size: 15px; font-weight: 700; color: #2B5EA7; margin-top: 2px; }
+  .pilih-bahasa { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+  .tombol-bahasa {
+    border: none; background: rgba(255,255,255,.65); color: #2B5EA7; font-family: inherit;
+    font-size: 15px; font-weight: 900; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+  }
+  .tombol-bahasa.aktif { background: #fff; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+  .bintang-bar {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    background: #fff; border-radius: 999px; padding: 8px 18px;
+    font-size: 18px; font-weight: 900; color: #E8A400;
+    box-shadow: 0 3px 0 rgba(0,0,0,.12);
+  }
+  .tombol-suara {
+    border: none; background: #fff; color: #2B5EA7; font-family: inherit;
+    font-size: 15px; font-weight: 900; border-radius: 999px; padding: 8px 16px;
+    cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.12); margin-top: 8px;
+  }
+  .tombol-dengar {
+    width: 100%; border: none; background: #FFF3B0; color: #8A6D00; font-family: inherit;
+    font-size: 17px; font-weight: 900; border-radius: 16px; padding: 12px; cursor: pointer;
+    margin-top: 12px; box-shadow: 0 3px 0 rgba(0,0,0,.12);
+  }
+
+  /* ---- menu ---- */
+  .menu { display: grid; gap: 12px; margin-top: 16px; }
+  .kartu-menu {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    border: none; border-radius: 22px; padding: 16px 18px; cursor: pointer;
+    text-align: left; color: #fff;
+    box-shadow: 0 4px 0 rgba(0,0,0,.15); font-family: inherit;
+  }
+  .kartu-menu:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+  .kartu-menu .ikon { font-size: 44px; line-height: 1; }
+  .kartu-menu .judul { font-size: 21px; font-weight: 900; }
+  .kartu-menu .desc { font-size: 14px; font-weight: 700; opacity: .92; margin-top: 2px; }
+  .m-hewan { background: #22A06B; } .m-tebak { background: #9B5DE5; }
+  .m-kuis { background: #F4A300; }
+  .ortu {
+    margin-top: 16px; background: rgba(255,255,255,.85); border-radius: 18px;
+    padding: 14px 16px; font-size: 13.5px; line-height: 1.55; color: #555;
+  }
+  .ortu b { color: #2B5EA7; }
+
+  /* ---- umum modul ---- */
+  .judul-modul { text-align: center; font-size: 26px; font-weight: 900; color: #2B5EA7; margin: 6px 0 12px; text-shadow: 1px 1px 0 #fff; }
+  .tombol-kembali {
+    border: none; background: #fff; color: #2B5EA7; font-family: inherit;
+    font-size: 16px; font-weight: 900; border-radius: 999px; padding: 9px 18px;
+    cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.12); margin-bottom: 12px;
+  }
+  .kartu {
+    background: #fff; border-radius: 24px; padding: 20px 16px; text-align: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,.12);
+  }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .tombol-grid {
+    border: none; border-radius: 16px; padding: 13px 0; font-family: inherit;
+    font-size: 26px; font-weight: 900; cursor: pointer; color: #fff;
+    background: #22A06B; box-shadow: 0 3px 0 rgba(0,0,0,.15);
+  }
+  .tombol-grid:active { transform: translateY(2px); box-shadow: none; }
+  .emoji-besar { font-size: 96px; line-height: 1.15; }
+  .kata-besar { font-size: 30px; font-weight: 900; color: #2B5EA7; margin-top: 4px; }
+  .kat-label {
+    display: inline-block; margin-top: 8px; background: #E4ECF5; color: #2B5EA7;
+    font-size: 13px; font-weight: 900; border-radius: 999px; padding: 5px 12px;
+  }
+  .kalimat { font-size: 16px; color: #666; margin-top: 8px; line-height: 1.5; }
+  .nav { display: flex; gap: 10px; margin-top: 14px; }
+  .tombol-nav {
+    flex: 1; border: none; border-radius: 16px; padding: 13px 0; font-family: inherit;
+    font-size: 17px; font-weight: 900; cursor: pointer; background: #2B9DF4; color: #fff;
+    box-shadow: 0 3px 0 rgba(0,0,0,.15);
+  }
+  .tombol-nav.abu { background: #B8C4D6; }
+  .tombol-nav:active { transform: translateY(2px); box-shadow: none; }
+  .chip-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .chip {
+    border: none; background: rgba(255,255,255,.75); color: #2B5EA7; font-family: inherit;
+    font-size: 14px; font-weight: 900; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+    box-shadow: 0 2px 0 rgba(0,0,0,.10);
+  }
+  .chip.aktif { background: #2B5EA7; color: #fff; }
+
+  /* ---- soal / kuis ---- */
+  .soal { font-size: 26px; font-weight: 900; color: #333; margin: 8px 0 4px; }
+  .soal-emoji { font-size: 88px; line-height: 1.2; }
+  .progres { font-size: 14px; font-weight: 900; color: #2B5EA7; margin-bottom: 6px; }
+  .bar-progres { height: 12px; background: #E4ECF5; border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+  .bar-progres > div { height: 100%; background: #22A06B; border-radius: 999px; transition: width .3s ease; }
+  .pilihan { display: grid; gap: 10px; margin-top: 14px; }
+  .tombol-pilihan {
+    border: 3px solid #E4ECF5; background: #fff; border-radius: 18px; padding: 14px;
+    font-family: inherit; font-size: 20px; font-weight: 900; color: #333; cursor: pointer;
+  }
+  .tombol-pilihan:active { transform: scale(.97); }
+  .tombol-pilihan.benar { background: #D6F5E3; border-color: #22A06B; color: #157347; }
+  .tombol-pilihan.salah { background: #FDE8E8; border-color: #E5484D; color: #B42318; }
+  .umpan { font-size: 22px; font-weight: 900; min-height: 32px; margin-top: 12px; }
+  .umpan.benar { color: #157347; } .umpan.salah { color: #B42318; }
+  .hasil-bintang { font-size: 54px; text-align: center; }
+  .skor-besar { font-size: 24px; font-weight: 900; color: #2B5EA7; text-align: center; margin-top: 8px; }
+  .tombol-utama {
+    display: block; width: 100%; border: none; border-radius: 18px; padding: 15px;
+    font-family: inherit; font-size: 19px; font-weight: 900; cursor: pointer;
+    background: #2B9DF4; color: #fff; margin-top: 12px; box-shadow: 0 3px 0 rgba(0,0,0,.15);
+  }
+  .tombol-utama.hijau { background: #22A06B; }
+  .tombol-utama:active { transform: translateY(2px); box-shadow: none; }
+  .muted { color: #8A94A6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ MENU ============ -->
+  <div class="page on" id="hal-menu">
+    <header>
+      <div class="logo">🌈 Belajar Ceria 2</div>
+      <div class="tagline" data-t="tagline">Nama-nama Binatang • Usia 4–6 Tahun</div>
+      <div class="pilih-bahasa">
+        <button id="btn-id" class="tombol-bahasa aktif" onclick="setBahasa('id')">🇮🇩 Indonesia</button>
+        <button id="btn-en" class="tombol-bahasa" onclick="setBahasa('en')">🇬🇧 English</button>
+      </div>
+      <div><span class="bintang-bar">⭐ <span id="total-bintang">0</span> <span data-t="bintangku">Bintangku</span></span></div>
+      <div><button class="tombol-suara" id="tombol-suara" onclick="setSuara(!suaraAktif)">🔊 Suara: Nyala</button></div>
+    </header>
+    <div class="menu">
+      <button class="kartu-menu m-hewan" onclick="bukaHewan()">
+        <span class="ikon">🐾</span>
+        <span><span class="judul" data-t="menuHewan">Belajar Hewan</span><br><span class="desc" data-t="menuHewanD">Kenali 100 nama binatang dengan gambar seru</span></span>
+      </button>
+      <button class="kartu-menu m-tebak" onclick="mulaiTebak()">
+        <span class="ikon">🖼️</span>
+        <span><span class="judul" data-t="menuTebak">Tebak Hewan</span><br><span class="desc" data-t="menuTebakD">100 soal: lihat gambarnya, tebak namanya!</span></span>
+      </button>
+      <button class="kartu-menu m-kuis" onclick="mulaiKuis()">
+        <span class="ikon">🏆</span>
+        <span><span class="judul" data-t="menuKuis">Kuis Hewan</span><br><span class="desc" data-t="menuKuisD">100 soal campuran, kumpulkan bintang!</span></span>
+      </button>
+    </div>
+    <div class="ortu" id="ortu-teks">
+      <b>👨‍👩‍👧 Untuk Orang Tua:</b> Belajar Ceria 2 adalah aplikasi belajar nama-nama binatang untuk anak usia 4–6 tahun.
+      Tanpa iklan, tanpa akun, tanpa pengumpulan data anak. Semua materi tersimpan di perangkat.
+      Temani anak saat bermain dan beri pujian setiap kali ia mendapat bintang. ⭐
+    </div>
+  </div>
+
+  <!-- ============ BELAJAR HEWAN ============ -->
+  <div class="page" id="hal-hewan">
+    <button class="tombol-kembali" onclick="keMenu()" data-t="kembali">⬅ Kembali</button>
+    <div class="judul-modul" data-t="judulHewan">🐾 Belajar Hewan</div>
+    <div class="kartu">
+      <div class="emoji-besar" id="hewan-emoji">🐱</div>
+      <div class="kata-besar" id="hewan-kata">Kucing</div>
+      <div><span class="kat-label" id="hewan-kat">Peliharaan</span></div>
+      <div class="kalimat" id="hewan-kalimat">Kucing berkata meong dan suka tidur di tempat hangat.</div>
+      <button class="tombol-dengar" onclick="dengarHewan()" data-t="dengar">🔊 Dengar Lagi</button>
+      <div class="nav">
+        <button class="tombol-nav abu" onclick="geserHewan(-1)" data-t="sebelum">⬅ Sebelumnya</button>
+        <button class="tombol-nav" onclick="geserHewan(1)" data-t="berikut">Berikutnya ➡</button>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="chip-bar" id="chip-kat"></div>
+    <div class="grid" id="grid-hewan"></div>
+  </div>
+
+  <!-- ============ SOAL (Tebak / Kuis — satu pola soal) ============ -->
+  <div class="page" id="hal-soal">
+    <button class="tombol-kembali" onclick="keMenu()" data-t="kembali">⬅ Kembali</button>
+    <div class="judul-modul" id="soal-judul">🖼️ Tebak Hewan</div>
+    <div class="kartu">
+      <div class="progres" id="soal-progres">Soal 1 dari 100</div>
+      <div class="bar-progres"><div id="soal-bar" style="width:1%"></div></div>
+      <div id="soal-tampilan"></div>
+      <div class="pilihan" id="soal-pilihan"></div>
+      <div class="umpan" id="soal-umpan"></div>
+    </div>
+  </div>
+
+  <!-- ============ HASIL ============ -->
+  <div class="page" id="hal-hasil">
+    <div class="judul-modul" data-t="judulHasil">🎉 Hebat Sekali!</div>
+    <div class="kartu">
+      <div class="hasil-bintang" id="hasil-bintang">⭐⭐⭐</div>
+      <div class="skor-besar" id="hasil-skor">Kamu menjawab 8 dari 10 dengan benar!</div>
+      <div class="kalimat" id="hasil-pesan">Terus berlatih, ya. Kamu pasti makin pintar!</div>
+      <button class="tombol-utama hijau" onclick="ulangSoal()" data-t="ulang">🔄 Main Lagi</button>
+      <button class="tombol-utama" onclick="keMenu()" data-t="keMenu">🏠 Kembali ke Menu</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- TEKS ANTARMUKA (id / en) ----------
+var TEKS = {
+  id: {
+    tagline: 'Nama-nama Binatang • Usia 4–6 Tahun',
+    bintangku: 'Bintangku',
+    suaraNyala: '🔊 Suara: Nyala', suaraMati: '🔇 Suara: Mati',
+    menuHewan: 'Belajar Hewan', menuHewanD: 'Kenali 100 nama binatang dengan gambar seru',
+    menuTebak: 'Tebak Hewan', menuTebakD: '100 soal: lihat gambarnya, tebak namanya!',
+    menuKuis: 'Kuis Hewan', menuKuisD: '100 soal campuran, kumpulkan bintang!',
+    kembali: '⬅ Kembali', sebelum: '⬅ Sebelumnya', berikut: 'Berikutnya ➡',
+    dengar: '🔊 Dengar Lagi',
+    judulHewan: '🐾 Belajar Hewan',
+    judulTebak: '🖼️ Tebak Hewan', judulKuis: '🏆 Kuis Hewan',
+    judulHasil: '🎉 Hebat Sekali!',
+    soal: 'Soal', dari: 'dari',
+    benar: '🎉 Benar! Kamu hebat! +1 ⭐', salahAwal: '😊 Belum tepat. Jawabannya: ',
+    pujiBenar: 'Hebat! Benar!', pujiSalahAwal: 'Belum tepat. Jawabannya ',
+    hasilSkor: 'Kamu menjawab {benar} dari {total} dengan benar!',
+    hasilSempurna: 'Sempurna! Kamu bintang hari ini!',
+    hasilBagus: 'Hebat! Sedikit lagi sempurna!',
+    hasilLatih: 'Terus berlatih, ya. Kamu pasti bisa!',
+    ulang: '🔄 Main Lagi', keMenu: '🏠 Kembali ke Menu',
+    ortu: '<b>👨‍👩‍👧 Untuk Orang Tua:</b> Belajar Ceria 2 adalah aplikasi belajar nama-nama binatang untuk anak usia 4–6 tahun. Tanpa iklan, tanpa akun, tanpa pengumpulan data anak. Semua materi tersimpan di perangkat. Temani anak saat bermain dan beri pujian setiap kali ia mendapat bintang. ⭐',
+    tanyaTebak: 'Hewan apa ini?',
+    tanyaNama: 'Gambar yang mana namanya',
+    tanyaFakta: 'Hewan apa ini?',
+    semua: 'Semua',
+    kat_pelihara: 'Peliharaan', kat_ternak: 'Ternak', kat_liar: 'Hewan Liar', kat_laut: 'Laut',
+    kat_burung: 'Burung', kat_serangga: 'Serangga', kat_reptil: 'Reptil', kat_dongeng: 'Dongeng'
+  },
+  en: {
+    tagline: 'Animal Names • Ages 4–6',
+    bintangku: 'My Stars',
+    suaraNyala: '🔊 Sound: On', suaraMati: '🔇 Sound: Off',
+    menuHewan: 'Learn Animals', menuHewanD: 'Learn 100 animal names with fun pictures',
+    menuTebak: 'Guess the Animal', menuTebakD: '100 questions: see the picture, guess its name!',
+    menuKuis: 'Animal Quiz', menuKuisD: '100 mixed questions, collect stars!',
+    kembali: '⬅ Back', sebelum: '⬅ Previous', berikut: 'Next ➡',
+    dengar: '🔊 Listen Again',
+    judulHewan: '🐾 Learn Animals',
+    judulTebak: '🖼️ Guess the Animal', judulKuis: '🏆 Animal Quiz',
+    judulHasil: '🎉 Great Job!',
+    soal: 'Question', dari: 'of',
+    benar: '🎉 Correct! You are great! +1 ⭐', salahAwal: '😊 Not quite. The answer is: ',
+    pujiBenar: 'Great! Correct!', pujiSalahAwal: 'Not quite. The answer is ',
+    hasilSkor: 'You answered {benar} out of {total} correctly!',
+    hasilSempurna: 'Perfect! You are the star today!',
+    hasilBagus: 'Great! Almost perfect!',
+    hasilLatih: 'Keep practicing. You can do it!',
+    ulang: '🔄 Play Again', keMenu: '🏠 Back to Menu',
+    ortu: '<b>👨‍👩‍👧 For Parents:</b> Belajar Ceria 2 is an animal names learning app for children aged 4–6. No ads, no accounts, no collection of data from children. All lessons are stored on the device. Play together with your child and praise them every time they earn a star. ⭐',
+    tanyaTebak: 'What animal is this?',
+    tanyaNama: 'Which picture is called',
+    tanyaFakta: 'What animal is this?',
+    semua: 'All',
+    kat_pelihara: 'Pets', kat_ternak: 'Farm Animals', kat_liar: 'Wild Animals', kat_laut: 'Sea Animals',
+    kat_burung: 'Birds', kat_serangga: 'Insects', kat_reptil: 'Reptiles', kat_dongeng: 'Storybook'
+  }
+};
+var bahasa = 'id';
+try { bahasa = localStorage.getItem('bc2_bahasa') || 'id'; } catch (e) {}
+if (TEKS[bahasa] === undefined) bahasa = 'id';
+function t(k) { return TEKS[bahasa][k]; }
+function terapkanBahasa() {
+  var semua = document.querySelectorAll('[data-t]');
+  for (var i = 0; i < semua.length; i++) {
+    var k = semua[i].getAttribute('data-t');
+    if (TEKS[bahasa][k] !== undefined) semua[i].textContent = TEKS[bahasa][k];
+  }
+  var ortu = document.getElementById('ortu-teks');
+  if (ortu) ortu.innerHTML = TEKS[bahasa].ortu;
+  var bId = document.getElementById('btn-id'), bEn = document.getElementById('btn-en');
+  if (bId) bId.classList.toggle('aktif', bahasa === 'id');
+  if (bEn) bEn.classList.toggle('aktif', bahasa === 'en');
+  perbaruiTombolSuara();
+  bangunChipKat();
+  tampilHewan();
+}
+function setBahasa(b) {
+  bahasa = b;
+  try { localStorage.setItem('bc2_bahasa', b); } catch (e) {}
+  terapkanBahasa();
+  keMenu();
+}
+
+// ---------- DATA HEWAN: 100 hewan (e = emoji, id/en = nama, kat = kategori, f/fe = fakta) ----------
+// Kategori: pelihara (8), ternak (13), liar (34), laut (14), burung (11), serangga (14), reptil (5), dongeng (1)
+var HEWAN = [
+  // ---- Peliharaan (8) ----
+  {e:'🐱', id:'Kucing', en:'Cat', kat:'pelihara', f:'Kucing berkata meong dan suka tidur di tempat hangat.', fe:'A cat says meow and likes to sleep in a warm place.'},
+  {e:'🐶', id:'Anjing', en:'Dog', kat:'pelihara', f:'Anjing penjaga rumah yang setia dan suka bermain.', fe:'A dog is a loyal guard of the house and loves to play.'},
+  {e:'🐰', id:'Kelinci', en:'Rabbit', kat:'pelihara', f:'Kelinci suka makan wortel dan melompat-lompat.', fe:'A rabbit loves to eat carrots and hop around.'},
+  {e:'🐹', id:'Hamster', en:'Hamster', kat:'pelihara', f:'Hamster kecil suka menyimpan makanan di pipinya.', fe:'A little hamster loves to store food in its cheeks.'},
+  {e:'🦜', id:'Burung Beo', en:'Parrot', kat:'pelihara', f:'Burung beo bisa menirukan suara manusia.', fe:'A parrot can copy the sound of human voices.'},
+  {e:'🐠', id:'Ikan Mas', en:'Goldfish', kat:'pelihara', f:'Ikan mas berenang di akuarium dengan sirip cantik.', fe:'A goldfish swims in the aquarium with pretty fins.'},
+  {e:'🐭', id:'Tikus', en:'Mouse', kat:'pelihara', f:'Tikus kecil suka makan keju dan bersembunyi.', fe:'A little mouse loves to eat cheese and hide.'},
+  {e:'🐩', id:'Pudel', en:'Poodle', kat:'pelihara', f:'Pudel berbulu keriting dan sangat pintar.', fe:'A poodle has curly fur and is very smart.'},
+  // ---- Ternak (13) ----
+  {e:'🐴', id:'Kuda', en:'Horse', kat:'ternak', f:'Kuda bisa berlari cepat dan dipakai untuk berkuda.', fe:'A horse can run fast and people ride on it.'},
+  {e:'🐮', id:'Sapi', en:'Cow', kat:'ternak', f:'Sapi memberi susu dan makan rumput di padang.', fe:'A cow gives milk and eats grass in the field.'},
+  {e:'🐷', id:'Babi', en:'Pig', kat:'ternak', f:'Babi suka berkubang di lumpur.', fe:'A pig loves to roll in the mud.'},
+  {e:'🐔', id:'Ayam', en:'Chicken', kat:'ternak', f:'Ayam berkokok di pagi hari dan bertelur.', fe:'A chicken crows in the morning and lays eggs.'},
+  {e:'🦆', id:'Bebek', en:'Duck', kat:'ternak', f:'Bebek berenang di kolam dan berkata kwek kwek.', fe:'A duck swims in the pond and says quack quack.'},
+  {e:'🐐', id:'Kambing', en:'Goat', kat:'ternak', f:'Kambing suka makan daun dan memanjat batu.', fe:'A goat loves to eat leaves and climb on rocks.'},
+  {e:'🐑', id:'Domba', en:'Sheep', kat:'ternak', f:'Domba berbulu tebal dan berkata mbee.', fe:'A sheep has thick wool and says baa.'},
+  {e:'🐃', id:'Kerbau', en:'Water Buffalo', kat:'ternak', f:'Kerbau membantu membajak sawah.', fe:'A water buffalo helps plow the rice field.'},
+  {e:'🐤', id:'Anak Ayam', en:'Chick', kat:'ternak', f:'Anak ayam kecil berwarna kuning dan berciap-ciap.', fe:'A little chick is yellow and chirps.'},
+  {e:'🦃', id:'Kalkun', en:'Turkey', kat:'ternak', f:'Kalkun punya ekor lebar yang bisa mengembang.', fe:'A turkey has a wide tail that can fan out.'},
+  {e:'🐓', id:'Ayam Jantan', en:'Rooster', kat:'ternak', f:'Ayam jantan berkokok keras saat matahari terbit.', fe:'A rooster crows loudly when the sun rises.'},
+  {e:'🐂', id:'Banteng', en:'Bull', kat:'ternak', f:'Banteng kuat dengan tanduk melengkung.', fe:'A bull is strong with curved horns.'},
+  {e:'🐏', id:'Domba Jantan', en:'Ram', kat:'ternak', f:'Domba jantan punya tanduk melingkar.', fe:'A ram has curled horns.'},
+  // ---- Hewan Liar (34) ----
+  {e:'🦁', id:'Singa', en:'Lion', kat:'liar', f:'Singa raja hutan dengan suara mengaum yang keras.', fe:'A lion is the king of the jungle with a loud roar.'},
+  {e:'🐯', id:'Harimau', en:'Tiger', kat:'liar', f:'Harimau loreng suka berburu di hutan.', fe:'A striped tiger loves to hunt in the forest.'},
+  {e:'🐘', id:'Gajah', en:'Elephant', kat:'liar', f:'Gajah binatang darat terbesar dengan belalai panjang.', fe:'An elephant is the biggest land animal with a long trunk.'},
+  {e:'🦒', id:'Jerapah', en:'Giraffe', kat:'liar', f:'Jerapah berleher panjang untuk makan daun tinggi.', fe:'A giraffe has a long neck to eat leaves high in the trees.'},
+  {e:'🦓', id:'Zebra', en:'Zebra', kat:'liar', f:'Zebra berbelang hitam putih seperti memakai piyama.', fe:'A zebra has black and white stripes like pajamas.'},
+  {e:'🐻', id:'Beruang', en:'Bear', kat:'liar', f:'Beruang suka makan madu dan tidur di musim dingin.', fe:'A bear loves to eat honey and sleep in winter.'},
+  {e:'🐼', id:'Panda', en:'Panda', kat:'liar', f:'Panda suka makan bambu dan berwarna hitam putih.', fe:'A panda loves to eat bamboo and is black and white.'},
+  {e:'🐨', id:'Koala', en:'Koala', kat:'liar', f:'Koala tidur di pohon eukaliptus hampir sepanjang hari.', fe:'A koala sleeps in a eucalyptus tree almost all day.'},
+  {e:'🐵', id:'Monyet', en:'Monkey', kat:'liar', f:'Monyet suka bergelantungan dan makan pisang.', fe:'A monkey loves to swing and eat bananas.'},
+  {e:'🦍', id:'Gorila', en:'Gorilla', kat:'liar', f:'Gorila kuat dan tinggal di hutan Afrika.', fe:'A gorilla is strong and lives in the forests of Africa.'},
+  {e:'🦧', id:'Orangutan', en:'Orangutan', kat:'liar', f:'Orangutan berbulu jingga dan hidup di pohon.', fe:'An orangutan has orange fur and lives in trees.'},
+  {e:'🦊', id:'Rubah', en:'Fox', kat:'liar', f:'Rubah cerdik dengan ekor lebat berwarna jingga.', fe:'A fox is clever with a bushy orange tail.'},
+  {e:'🐺', id:'Serigala', en:'Wolf', kat:'liar', f:'Serigala melolong di malam hari.', fe:'A wolf howls at night.'},
+  {e:'🦌', id:'Rusa', en:'Deer', kat:'liar', f:'Rusa jantan punya tanduk bercabang yang indah.', fe:'A male deer has beautiful branching antlers.'},
+  {e:'🦛', id:'Kuda Nil', en:'Hippopotamus', kat:'liar', f:'Kuda nil suka berendam di air sepanjang hari.', fe:'A hippopotamus loves to soak in the water all day.'},
+  {e:'🦏', id:'Badak', en:'Rhinoceros', kat:'liar', f:'Badak punya cula di hidungnya.', fe:'A rhinoceros has a horn on its nose.'},
+  {e:'🦘', id:'Kanguru', en:'Kangaroo', kat:'liar', f:'Kanguru melompat jauh dan membawa anaknya di kantong.', fe:'A kangaroo jumps far and carries its baby in a pouch.'},
+  {e:'🐪', id:'Unta', en:'Camel', kat:'liar', f:'Unta bisa berjalan jauh di gurun tanpa minum.', fe:'A camel can walk far in the desert without drinking.'},
+  {e:'🦙', id:'Llama', en:'Llama', kat:'liar', f:'Llama berbulu tebal dan tinggal di pegunungan.', fe:'A llama has thick wool and lives in the mountains.'},
+  {e:'🐿️', id:'Tupai', en:'Squirrel', kat:'liar', f:'Tupai suka makan kacang dan melompat di pohon.', fe:'A squirrel loves to eat nuts and jump in trees.'},
+  {e:'🦔', id:'Landak', en:'Hedgehog', kat:'liar', f:'Landak punya duri tajam untuk melindungi diri.', fe:'A hedgehog has sharp spines to protect itself.'},
+  {e:'🦥', id:'Kukang', en:'Sloth', kat:'liar', f:'Kukang bergerak sangat lambat dan suka tidur.', fe:'A sloth moves very slowly and loves to sleep.'},
+  {e:'🦦', id:'Berang-berang', en:'Otter', kat:'liar', f:'Berang-berang suka berenang dan bermain di air.', fe:'An otter loves to swim and play in the water.'},
+  {e:'🦨', id:'Sigung', en:'Skunk', kat:'liar', f:'Sigung mengeluarkan bau untuk mengusir musuh.', fe:'A skunk sprays a bad smell to chase enemies away.'},
+  {e:'🦡', id:'Musang', en:'Badger', kat:'liar', f:'Musang aktif di malam hari dan pandai menggali.', fe:'A badger is active at night and is good at digging.'},
+  {e:'🐆', id:'Macan Tutul', en:'Leopard', kat:'liar', f:'Macan tutul berlari sangat cepat dengan bintik-bintik.', fe:'A leopard runs very fast and has spots.'},
+  {e:'🦬', id:'Bison', en:'Bison', kat:'liar', f:'Bison besar berbulu tebal tinggal di padang rumput.', fe:'A big bison with thick fur lives on the grassland.'},
+  {e:'🦖', id:'Dinosaurus', en:'Dinosaur', kat:'liar', f:'Dinosaurus hidup jutaan tahun lalu, jauh sebelum manusia.', fe:'A dinosaur lived millions of years ago, long before people.'},
+  {e:'🦕', id:'Brontosaurus', en:'Brontosaurus', kat:'liar', f:'Brontosaurus berleher sangat panjang dan makan daun.', fe:'A brontosaurus has a very long neck and eats leaves.'},
+  {e:'🦣', id:'Mamut', en:'Mammoth', kat:'liar', f:'Mamut berbulu tebal seperti gajah dan hidup di zaman es.', fe:'A mammoth has thick fur like an elephant and lived in the ice age.'},
+  {e:'🦇', id:'Kelelawar', en:'Bat', kat:'liar', f:'Kelelawar tidur menggantung dan terbang di malam hari.', fe:'A bat sleeps hanging upside down and flies at night.'},
+  {e:'🐻‍❄️', id:'Beruang Kutub', en:'Polar Bear', kat:'liar', f:'Beruang kutub berbulu putih dan tinggal di es.', fe:'A polar bear has white fur and lives on the ice.'},
+  {e:'🐗', id:'Babi Hutan', en:'Wild Boar', kat:'liar', f:'Babi hutan hidup di hutan dan punya taring.', fe:'A wild boar lives in the forest and has tusks.'},
+  {e:'🐫', id:'Unta Baktria', en:'Bactrian Camel', kat:'liar', f:'Unta Baktria punya dua punuk di punggungnya.', fe:'A Bactrian camel has two humps on its back.'},
+  // ---- Laut (14) ----
+  {e:'🐟', id:'Ikan', en:'Fish', kat:'laut', f:'Ikan berenang dengan sirip dan bernapas dengan insang.', fe:'A fish swims with fins and breathes with gills.'},
+  {e:'🦈', id:'Hiu', en:'Shark', kat:'laut', f:'Hiu punya gigi tajam dan berenang sangat cepat.', fe:'A shark has sharp teeth and swims very fast.'},
+  {e:'🐳', id:'Paus', en:'Whale', kat:'laut', f:'Paus binatang laut terbesar dan menyemburkan air.', fe:'A whale is the biggest sea animal and spouts water.'},
+  {e:'🐬', id:'Lumba-lumba', en:'Dolphin', kat:'laut', f:'Lumba-lumba pintar dan suka melompat di laut.', fe:'A dolphin is smart and loves to jump in the sea.'},
+  {e:'🐙', id:'Gurita', en:'Octopus', kat:'laut', f:'Gurita punya delapan lengan dan bisa menyemprot tinta.', fe:'An octopus has eight arms and can spray ink.'},
+  {e:'🦑', id:'Cumi-cumi', en:'Squid', kat:'laut', f:'Cumi-cumi berenang cepat dan punya sepuluh lengan.', fe:'A squid swims fast and has ten arms.'},
+  {e:'🦐', id:'Udang', en:'Shrimp', kat:'laut', f:'Udang kecil berenang mundur dengan ekor melengkung.', fe:'A little shrimp swims backwards with a curved tail.'},
+  {e:'🦀', id:'Kepiting', en:'Crab', kat:'laut', f:'Kepiting berjalan miring dengan capit besar.', fe:'A crab walks sideways with big claws.'},
+  {e:'🦞', id:'Lobster', en:'Lobster', kat:'laut', f:'Lobster punya capit kuat dan hidup di dasar laut.', fe:'A lobster has strong claws and lives on the sea floor.'},
+  {e:'🐡', id:'Ikan Buntal', en:'Pufferfish', kat:'laut', f:'Ikan buntal menggembungkan badan saat takut.', fe:'A pufferfish puffs up its body when it is scared.'},
+  {e:'🦭', id:'Anjing Laut', en:'Seal', kat:'laut', f:'Anjing laut suka berjemur di batu karang.', fe:'A seal loves to sunbathe on the rocks.'},
+  {e:'🪼', id:'Ubur-ubur', en:'Jellyfish', kat:'laut', f:'Ubur-ubur melayang di air seperti payung transparan.', fe:'A jellyfish floats in the water like a clear umbrella.'},
+  {e:'🐋', id:'Paus Biru', en:'Blue Whale', kat:'laut', f:'Paus biru binatang terbesar di dunia.', fe:'A blue whale is the biggest animal in the world.'},
+  {e:'🐚', id:'Kerang', en:'Clam', kat:'laut', f:'Kerang hidup di dalam cangkang di dasar laut.', fe:'A clam lives inside a shell on the sea floor.'},
+  // ---- Burung (11) ----
+  {e:'🦅', id:'Elang', en:'Eagle', kat:'burung', f:'Elang terbang tinggi dengan penglihatan tajam.', fe:'An eagle flies high with sharp eyesight.'},
+  {e:'🦉', id:'Burung Hantu', en:'Owl', kat:'burung', f:'Burung hantu aktif di malam hari dan matanya besar.', fe:'An owl is active at night and has big eyes.'},
+  {e:'🦩', id:'Flamingo', en:'Flamingo', kat:'burung', f:'Flamingo berdiri dengan satu kaki dan berwarna merah muda.', fe:'A flamingo stands on one leg and is pink.'},
+  {e:'🦚', id:'Merak', en:'Peacock', kat:'burung', f:'Merak jantan melebarkan ekornya yang indah.', fe:'A male peacock spreads its beautiful tail.'},
+  {e:'🦢', id:'Angsa', en:'Swan', kat:'burung', f:'Angsa berenang anggun dengan leher melengkung.', fe:'A swan swims gracefully with a curved neck.'},
+  {e:'🕊️', id:'Merpati', en:'Dove', kat:'burung', f:'Merpati lambang perdamaian dan suka terbang berkelompok.', fe:'A dove is a symbol of peace and loves to fly in groups.'},
+  {e:'🐦', id:'Burung Pipit', en:'Sparrow', kat:'burung', f:'Burung pipit kecil dan suka berciap di pagi hari.', fe:'A little sparrow chirps in the morning.'},
+  {e:'🐦‍⬛', id:'Gagak', en:'Crow', kat:'burung', f:'Gagak berwarna hitam dan sangat pintar.', fe:'A crow is black and very smart.'},
+  {e:'🐧', id:'Penguin', en:'Penguin', kat:'burung', f:'Penguin tidak bisa terbang tapi berenang dengan lincah.', fe:'A penguin cannot fly but swims very well.'},
+  {e:'🦤', id:'Dodo', en:'Dodo', kat:'burung', f:'Dodo burung yang sudah punah dan tidak bisa terbang.', fe:'A dodo is a bird that is extinct and could not fly.'},
+  {e:'🪿', id:'Soang', en:'Goose', kat:'burung', f:'Soang berenang di kolam dan berkata kwek.', fe:'A goose swims in the pond and says honk.'},
+  // ---- Serangga (14) ----
+  {e:'🐝', id:'Lebah', en:'Bee', kat:'serangga', f:'Lebah membuat madu dan membantu bunga berbunga.', fe:'A bee makes honey and helps flowers grow.'},
+  {e:'🦋', id:'Kupu-kupu', en:'Butterfly', kat:'serangga', f:'Kupu-kupu punya sayap warna-warni dan suka hinggap di bunga.', fe:'A butterfly has colorful wings and loves to land on flowers.'},
+  {e:'🐞', id:'Kepik', en:'Ladybug', kat:'serangga', f:'Kepik kecil berwarna merah dengan bintik hitam.', fe:'A little ladybug is red with black spots.'},
+  {e:'🪲', id:'Kumbang', en:'Beetle', kat:'serangga', f:'Kumbang punya sayap keras dan tanduk kecil.', fe:'A beetle has hard wings and a little horn.'},
+  {e:'🐜', id:'Semut', en:'Ant', kat:'serangga', f:'Semut bekerja sama mengangkat makanan yang berat.', fe:'Ants work together to carry heavy food.'},
+  {e:'🐛', id:'Ulat', en:'Caterpillar', kat:'serangga', f:'Ulat makan daun lalu berubah jadi kupu-kupu.', fe:'A caterpillar eats leaves and then turns into a butterfly.'},
+  {e:'🐌', id:'Siput', en:'Snail', kat:'serangga', f:'Siput berjalan pelan sambil membawa rumahnya.', fe:'A snail walks slowly while carrying its house.'},
+  {e:'🦟', id:'Nyamuk', en:'Mosquito', kat:'serangga', f:'Nyamuk kecil suka menggigit dan berbunyi nging.', fe:'A little mosquito likes to bite and buzzes.'},
+  {e:'🦗', id:'Belalang', en:'Grasshopper', kat:'serangga', f:'Belalang melompat tinggi dengan kaki belakangnya.', fe:'A grasshopper jumps high with its back legs.'},
+  {e:'🕷️', id:'Laba-laba', en:'Spider', kat:'serangga', f:'Laba-laba membuat jaring untuk menangkap serangga.', fe:'A spider makes a web to catch insects.'},
+  {e:'🪱', id:'Cacing', en:'Worm', kat:'serangga', f:'Cacing menggali tanah dan membantu tanaman tumbuh.', fe:'A worm digs the soil and helps plants grow.'},
+  {e:'🪳', id:'Kecoak', en:'Cockroach', kat:'serangga', f:'Kecoak aktif di malam hari dan berlari cepat.', fe:'A cockroach is active at night and runs fast.'},
+  {e:'🦂', id:'Kalajengking', en:'Scorpion', kat:'serangga', f:'Kalajengking punya capit dan ekor beracun.', fe:'A scorpion has claws and a stinging tail.'},
+  {e:'🪰', id:'Lalat', en:'Fly', kat:'serangga', f:'Lalat kecil terbang cepat dan suka hinggap di makanan.', fe:'A little fly flies fast and loves to land on food.'},
+  // ---- Reptil (5) ----
+  {e:'🐍', id:'Ular', en:'Snake', kat:'reptil', f:'Ular melata tanpa kaki dan menjulurkan lidahnya.', fe:'A snake slithers without legs and sticks out its tongue.'},
+  {e:'🐊', id:'Buaya', en:'Crocodile', kat:'reptil', f:'Buaya berenang di sungai dengan gigi tajam.', fe:'A crocodile swims in the river with sharp teeth.'},
+  {e:'🐢', id:'Kura-kura', en:'Turtle', kat:'reptil', f:'Kura-kura berjalan pelan dengan tempurung keras.', fe:'A turtle walks slowly with a hard shell.'},
+  {e:'🦎', id:'Kadal', en:'Lizard', kat:'reptil', f:'Kadal berjemur di batu dan bisa memutuskan ekornya.', fe:'A lizard sunbathes on rocks and can drop its tail.'},
+  {e:'🐸', id:'Katak', en:'Frog', kat:'reptil', f:'Katak melompat dan berkata kwek, hidup di air dan darat.', fe:'A frog jumps and croaks, living in water and on land.'},
+  // ---- Dongeng (1) ----
+  {e:'🦄', id:'Unicorn', en:'Unicorn', kat:'dongeng', f:'Unicorn hanya ada di cerita dongeng, kudanya punya tanduk di dahi.', fe:'A unicorn lives only in fairy tales, a horse with a horn on its forehead.'}
+];
+var KAT = ['pelihara', 'ternak', 'liar', 'laut', 'burung', 'serangga', 'reptil', 'dongeng'];
+function namaKat(k) { return t('kat_' + k); }
+function namaHewan(x) { return bahasa === 'en' ? x.en : x.id; }
+function faktaHewan(x) { return bahasa === 'en' ? x.fe : x.f; }
+
+// ---------- BINTANG (tersimpan di perangkat; kunci terpisah dari Jilid 1) ----------
+function ambilBintang() {
+  try { return parseInt(localStorage.getItem('bc2_bintang') || '0', 10) || 0; }
+  catch (e) { return window._bintang || 0; }
+}
+function simpanBintang(n) {
+  try { localStorage.setItem('bc2_bintang', String(n)); }
+  catch (e) { window._bintang = n; }
+  var el = document.getElementById('total-bintang');
+  if (el) {
+    el.textContent = n;
+    var bar = el.parentElement;
+    if (bar && bar.classList) { bar.classList.remove('pop'); void bar.offsetWidth; bar.classList.add('pop'); }
+  }
+}
+function tambahBintang() { simpanBintang(ambilBintang() + 1); }
+
+// ---------- SUARA (Web Speech API; pilih suara anak bila tersedia di HP) ----------
+var suaraAktif = true;
+try { suaraAktif = localStorage.getItem('bc2_suara') !== 'off'; } catch (e) {}
+function pilihSuara() {
+  try {
+    if (!('speechSynthesis' in window)) return null;
+    var semua = window.speechSynthesis.getVoices() || [];
+    var kode = bahasa === 'en' ? 'en' : 'id';
+    var cocok = [];
+    for (var i = 0; i < semua.length; i++) {
+      if (((semua[i].lang || '').toLowerCase().indexOf(kode) === 0)) cocok.push(semua[i]);
+    }
+    var cari = function (re) {
+      for (var j = 0; j < cocok.length; j++) { if (re.test(cocok[j].name || '')) return cocok[j]; }
+      return null;
+    };
+    return cari(/child|kid|junior|anak/i) || cari(/female|perempuan/i) || cocok[0] || null;
+  } catch (e) { return null; }
+}
+function bicara(teks) {
+  if (!suaraAktif) return;
+  if (!('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(teks);
+    u.lang = bahasa === 'en' ? 'en-US' : 'id-ID';
+    u.rate = 0.9;
+    u.pitch = bahasa === 'en' ? 1.4 : 1.3;
+    var s = pilihSuara();
+    if (s) u.voice = s;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+if ('speechSynthesis' in window) {
+  try {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = function () { window.speechSynthesis.getVoices(); };
+  } catch (e) {}
+}
+function bunyiBenar() {
+  if (!suaraAktif) return;
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [523.25, 659.25, 783.99].forEach(function (f, i) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + i * 0.12); o.stop(ctx.currentTime + i * 0.12 + 0.4);
+    });
+  } catch (e) {}
+}
+function setSuara(on) {
+  suaraAktif = on;
+  try { localStorage.setItem('bc2_suara', on ? 'on' : 'off'); } catch (e) {}
+  if (!on && 'speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  perbaruiTombolSuara();
+}
+function perbaruiTombolSuara() {
+  var b = document.getElementById('tombol-suara');
+  if (b) b.textContent = suaraAktif ? t('suaraNyala') : t('suaraMati');
+}
+
+// ---------- NAVIGASI ----------
+function tampil(id) {
+  var semua = document.querySelectorAll('.page');
+  for (var i = 0; i < semua.length; i++) semua[i].classList.remove('on');
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0, 0);
+}
+function keMenu() { tampil('hal-menu'); }
+
+// ---------- BELAJAR HEWAN (100 kartu + saring per kategori) ----------
+var filterKat = 'semua';
+var idxHewan = 0;
+function daftarHewan() {
+  if (filterKat === 'semua') return HEWAN;
+  return HEWAN.filter(function (x) { return x.kat === filterKat; });
+}
+function bangunChipKat() {
+  var wadah = document.getElementById('chip-kat');
+  if (!wadah) return;
+  wadah.innerHTML = '';
+  var semuaKat = ['semua'].concat(KAT);
+  semuaKat.forEach(function (k) {
+    var b = document.createElement('button');
+    b.className = 'chip' + (filterKat === k ? ' aktif' : '');
+    var label = k === 'semua' ? t('semua') : namaKat(k);
+    var jml = k === 'semua' ? HEWAN.length : HEWAN.filter(function (x) { return x.kat === k; }).length;
+    b.textContent = label + ' (' + jml + ')';
+    b.onclick = function () { filterKat = k; idxHewan = 0; bangunChipKat(); bangunGridHewan(); tampilHewan(); };
+    wadah.appendChild(b);
+  });
+}
+function bangunGridHewan() {
+  var wadah = document.getElementById('grid-hewan');
+  if (!wadah) return;
+  wadah.innerHTML = '';
+  daftarHewan().forEach(function (x, i) {
+    var b = document.createElement('button');
+    b.className = 'tombol-grid';
+    b.textContent = x.e;
+    b.onclick = function () { idxHewan = i; tampilHewan(); window.scrollTo(0, 0); };
+    wadah.appendChild(b);
+  });
+}
+function tampilHewan() {
+  var daftar = daftarHewan();
+  if (!daftar.length) return;
+  idxHewan = (idxHewan + daftar.length) % daftar.length;
+  var x = daftar[idxHewan];
+  document.getElementById('hewan-emoji').textContent = x.e;
+  document.getElementById('hewan-kata').textContent = namaHewan(x);
+  document.getElementById('hewan-kat').textContent = namaKat(x.kat);
+  document.getElementById('hewan-kalimat').textContent = faktaHewan(x);
+}
+function geserHewan(d) { idxHewan = idxHewan + d; tampilHewan(); }
+function dengarHewan() {
+  var x = daftarHewan()[idxHewan];
+  if (x) bicara(namaHewan(x) + '. ' + faktaHewan(x));
+}
+function bukaHewan() {
+  bangunChipKat();
+  bangunGridHewan();
+  tampilHewan();
+  tampil('hal-hewan');
+}
+
+// ---------- MESIN SOAL (satu pola; dipakai Tebak Hewan + Kuis Hewan) ----------
+var soalList = [], soalIdx = 0, soalBenar = 0, soalMode = '';
+function acak(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t2 = a[i]; a[i] = a[j]; a[j] = t2;
+  }
+  return a;
+}
+function mulaiSoal(judul, daftar) {
+  soalList = daftar; soalIdx = 0; soalBenar = 0;
+  document.getElementById('soal-judul').textContent = judul;
+  tampil('hal-soal'); tampilSoal();
+}
+function tampilSoal() {
+  var s = soalList[soalIdx];
+  document.getElementById('soal-progres').textContent = t('soal') + ' ' + (soalIdx + 1) + ' ' + t('dari') + ' ' + soalList.length;
+  document.getElementById('soal-bar').style.width = ((soalIdx) / soalList.length * 100) + '%';
+  document.getElementById('soal-umpan').textContent = '';
+  document.getElementById('soal-umpan').className = 'umpan';
+  var tamp = document.getElementById('soal-tampilan');
+  if (s.html) { tamp.innerHTML = s.html; }
+  else { tamp.innerHTML = '<div class="soal">' + s.tanya + '</div>'; }
+  if (s.ucap) bicara(s.ucap);
+  var wadah = document.getElementById('soal-pilihan');
+  wadah.innerHTML = '';
+  acak(s.opsi).forEach(function (op) {
+    var b = document.createElement('button');
+    b.className = 'tombol-pilihan'; b.textContent = op;
+    if (s.besar) b.style.fontSize = '36px';
+    b.onclick = function () { jawabSoal(b, op); };
+    wadah.appendChild(b);
+  });
+}
+function jawabSoal(tombol, jawaban) {
+  var s = soalList[soalIdx];
+  var semua = document.querySelectorAll('#soal-pilihan .tombol-pilihan');
+  for (var i = 0; i < semua.length; i++) semua[i].disabled = true;
+  var umpan = document.getElementById('soal-umpan');
+  if (String(jawaban) === String(s.jawab)) {
+    tombol.classList.add('benar');
+    umpan.textContent = t('benar');
+    umpan.className = 'umpan benar';
+    soalBenar++; tambahBintang();
+    bicara(t('pujiBenar')); bunyiBenar();
+  } else {
+    tombol.classList.add('salah');
+    umpan.textContent = t('salahAwal') + s.jawab;
+    umpan.className = 'umpan salah';
+    bicara(t('pujiSalahAwal') + s.jawab + '.');
+    for (var j = 0; j < semua.length; j++) {
+      if (String(semua[j].textContent) === String(s.jawab)) semua[j].classList.add('benar');
+    }
+  }
+  document.getElementById('soal-bar').style.width = ((soalIdx + 1) / soalList.length * 100) + '%';
+  setTimeout(function () {
+    soalIdx++;
+    if (soalIdx < soalList.length) tampilSoal(); else tampilHasil();
+  }, 1600);
+}
+function tampilHasil() {
+  var total = soalList.length;
+  var persen = total ? soalBenar / total : 0;
+  var bintang = persen >= 0.9 ? '⭐⭐⭐' : (persen >= 0.6 ? '⭐⭐' : '⭐');
+  document.getElementById('hasil-bintang').textContent = bintang;
+  document.getElementById('hasil-skor').textContent = t('hasilSkor').replace('{benar}', soalBenar).replace('{total}', total);
+  var pesan = soalBenar === total ? t('hasilSempurna') :
+    (persen >= 0.6 ? t('hasilBagus') : t('hasilLatih'));
+  document.getElementById('hasil-pesan').textContent = pesan;
+  bicara(pesan);
+  tampil('hal-hasil');
+}
+function ulangSoal() {
+  if (soalMode === 'tebak') mulaiTebak();
+  else mulaiKuis();
+}
+
+// Pengecoh: utamakan kategori yang sama; bila kurang, tambah dari kategori lain.
+function opsiNama(x, jumlah) {
+  var nama = namaHewan(x);
+  var sama = HEWAN.filter(function (y) { return y.kat === x.kat && y !== x; });
+  var lain = HEWAN.filter(function (y) { return y.kat !== x.kat; });
+  var opsi = [nama];
+  acak(sama).forEach(function (y) { if (opsi.length < jumlah) opsi.push(namaHewan(y)); });
+  acak(lain).forEach(function (y) { if (opsi.length < jumlah) opsi.push(namaHewan(y)); });
+  return opsi;
+}
+function opsiEmoji(x, jumlah) {
+  var opsi = [x.e];
+  var sama = HEWAN.filter(function (y) { return y.kat === x.kat && y !== x; });
+  var lain = HEWAN.filter(function (y) { return y.kat !== x.kat; });
+  acak(sama).forEach(function (y) { if (opsi.length < jumlah) opsi.push(y.e); });
+  acak(lain).forEach(function (y) { if (opsi.length < jumlah) opsi.push(y.e); });
+  return opsi;
+}
+
+// ---------- TEBAK HEWAN (100 soal: lihat gambar, tebak namanya) ----------
+function mulaiTebak() {
+  soalMode = 'tebak';
+  var daftar = acak(HEWAN).map(function (x) {
+    return {
+      html: '<div class="soal-emoji">' + x.e + '</div><div class="soal">' + t('tanyaTebak') + '</div>',
+      ucap: t('tanyaTebak'),
+      jawab: namaHewan(x),
+      opsi: opsiNama(x, 4)
+    };
+  });
+  mulaiSoal(t('judulTebak'), daftar);
+}
+
+// ---------- KUIS HEWAN (100 soal campuran: 40 gambar->nama, 30 nama->gambar, 30 fakta->hewan) ----------
+function mulaiKuis() {
+  soalMode = 'kuis';
+  var daftar = [];
+  // 40 soal gambar -> nama
+  for (var i = 0; i < 40; i++) {
+    var x = HEWAN[Math.floor(Math.random() * HEWAN.length)];
+    daftar.push({
+      html: '<div class="soal-emoji">' + x.e + '</div><div class="soal">' + t('tanyaTebak') + '</div>',
+      ucap: t('tanyaTebak'),
+      jawab: namaHewan(x),
+      opsi: opsiNama(x, 4)
+    });
+  }
+  // 30 soal nama -> gambar
+  for (var k = 0; k < 30; k++) {
+    var y = HEWAN[Math.floor(Math.random() * HEWAN.length)];
+    var tanya = t('tanyaNama') + ' "' + namaHewan(y) + '"?';
+    daftar.push({
+      html: '<div class="soal">' + tanya + '</div>',
+      ucap: tanya,
+      jawab: y.e,
+      opsi: opsiEmoji(y, 4),
+      besar: true
+    });
+  }
+  // 30 soal fakta -> hewan
+  for (var m = 0; m < 30; m++) {
+    var z = HEWAN[Math.floor(Math.random() * HEWAN.length)];
+    var fakta = faktaHewan(z);
+    daftar.push({
+      html: '<div class="soal" style="font-size:20px;line-height:1.5">' + fakta + '</div><div class="soal">' + t('tanyaFakta') + '</div>',
+      ucap: fakta + ' ' + t('tanyaFakta'),
+      jawab: namaHewan(z),
+      opsi: opsiNama(z, 4)
+    });
+  }
+  mulaiSoal(t('judulKuis'), acak(daftar));
+}
+
+// ---------- MULAI ----------
+simpanBintang(ambilBintang());
+terapkanBahasa();
+</script>
+</body>
+</html>
