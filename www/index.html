@@ -457,18 +457,41 @@ function pilihSuara() {
     return cari(/child|kid|junior|anak/i) || cari(/female|perempuan/i) || cocok[0] || null;
   } catch (e) { return null; }
 }
+var bicaraTimer = null;
 function bicara(teks) {
   if (!suaraAktif) return;
   if (!('speechSynthesis' in window)) return;
   try {
-    window.speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(teks);
-    u.lang = bahasa === 'en' ? 'en-US' : 'id-ID';
-    u.rate = 0.9;
-    u.pitch = bahasa === 'en' ? 1.4 : 1.3;
-    var s = pilihSuara();
-    if (s) u.voice = s;
-    window.speechSynthesis.speak(u);
+    if (bicaraTimer) { clearTimeout(bicaraTimer); bicaraTimer = null; }
+    var ss = window.speechSynthesis;
+    var mulai = function () {
+      try {
+        var u = new SpeechSynthesisUtterance(teks);
+        var s = pilihSuara();
+        if (s) { u.voice = s; u.lang = s.lang; }
+        // Bila HP tidak punya suara Indonesia/Inggris, biarkan lang kosong:
+        // mesin TTS bawaan tetap membacakan teks (logat Inggris) daripada diam.
+        u.rate = 0.9;
+        u.pitch = bahasa === 'en' ? 1.4 : 1.3;
+        u.onerror = function (ev) {
+          if (ev && (ev.error === 'canceled' || ev.error === 'interrupted')) return;
+          try {
+            var u2 = new SpeechSynthesisUtterance(teks);
+            u2.rate = 0.9;
+            ss.speak(u2);
+          } catch (e2) {}
+        };
+        ss.resume();
+        ss.speak(u);
+      } catch (e) {}
+    };
+    if (ss.speaking || ss.pending) {
+      ss.cancel();
+      // Chrome Android: speak() langsung setelah cancel() sering ikut dibatalkan.
+      bicaraTimer = setTimeout(mulai, 150);
+    } else {
+      mulai();
+    }
   } catch (e) {}
 }
 if ('speechSynthesis' in window) {
