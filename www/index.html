@@ -45,6 +45,9 @@
     font-size: 17px; font-weight: 900; border-radius: 16px; padding: 12px; cursor: pointer;
     margin-top: 12px; box-shadow: 0 3px 0 rgba(0,0,0,.12);
   }
+  .status-suara {
+    font-size: 12px; color: #666; text-align: center; margin-top: 8px; min-height: 16px;
+  }
 
   /* ---- menu ---- */
   .menu { display: grid; gap: 12px; margin-top: 16px; }
@@ -181,6 +184,7 @@
       <div><span class="kat-label" id="hewan-kat">Peliharaan</span></div>
       <div class="kalimat" id="hewan-kalimat">Kucing berkata meong dan suka tidur di tempat hangat.</div>
       <button class="tombol-dengar" onclick="dengarHewan()" data-t="dengar">🔊 Dengar Lagi</button>
+      <div class="status-suara" id="status-suara">Status suara: siap.</div>
       <div class="nav">
         <button class="tombol-nav abu" onclick="geserHewan(-1)" data-t="sebelum">⬅ Sebelumnya</button>
         <button class="tombol-nav" onclick="geserHewan(1)" data-t="berikut">Berikutnya ➡</button>
@@ -457,33 +461,114 @@ function pilihSuara() {
     return cari(/child|kid|junior|anak/i) || cari(/female|perempuan/i) || cocok[0] || null;
   } catch (e) { return null; }
 }
+function statusSuara(pesan) {
+  try {
+    var el = document.getElementById('status-suara');
+    if (el) el.textContent = pesan;
+  } catch (e) {}
+}
 var bicaraTimer = null;
+var bicaraCoba = 0;
+var bicaraAntre = [];
+var bicaraCalon = [];
+var bicaraCalonIdx = 0;
+function potongTeks(teks) {
+  // Mesin suara Android sering gagal (synthesis-failed) pada teks panjang —
+  // potong jadi bagian-bagian pendek (maks ~150 karakter) dan ucapkan berurutan.
+  var hasil = [];
+  var bagian = teks.replace(/([.!?])\s+/g, '$1|').split('|');
+  for (var i = 0; i < bagian.length; i++) {
+    var k = bagian[i].trim();
+    if (!k) continue;
+    while (k.length > 150) {
+      var potong = k.lastIndexOf(',', 150);
+      if (potong < 40) potong = k.lastIndexOf(' ', 150);
+      if (potong < 40) potong = 150;
+      hasil.push(k.slice(0, potong + 1).trim());
+      k = k.slice(potong + 1).trim();
+    }
+    if (k) hasil.push(k);
+  }
+  return hasil.length ? hasil : [teks];
+}
+function daftarCalonSuara() {
+  // Urutan coba: suara pilihan -> suara se-bahasa lain -> suara apa pun -> bawaan.
+  // Suara yang terdaftar tapi datanya belum terpasang di HP akan gagal
+  // (synthesis-failed); rantai ini memastikan ada suara lain yang dicoba.
+  var semua = [];
+  try { semua = window.speechSynthesis.getVoices() || []; } catch (e) {}
+  var kode = bahasa === 'en' ? 'en' : 'id';
+  var utama = pilihSuara();
+  var daftar = [];
+  if (utama) daftar.push(utama);
+  for (var i = 0; i < semua.length; i++) {
+    var v = semua[i];
+    if (v === utama) continue;
+    if ((v.lang || '').toLowerCase().indexOf(kode) === 0) daftar.push(v);
+  }
+  for (var j = 0; j < semua.length; j++) {
+    if (daftar.indexOf(semua[j]) === -1) daftar.push(semua[j]);
+  }
+  daftar.push(null);
+  return daftar.slice(0, 8);
+}
+function ucapBerikutnya() {
+  if (!bicaraAntre.length) { statusSuara('Selesai bersuara.'); return; }
+  var ss = window.speechSynthesis;
+  var teks = bicaraAntre[0];
+  var calon = bicaraCalon[bicaraCalonIdx];
+  var u = new SpeechSynthesisUtterance(teks);
+  if (calon) { u.voice = calon; u.lang = calon.lang; }
+  u.rate = 0.9;
+  u.pitch = bahasa === 'en' ? 1.4 : 1.3;
+  var namaCalon = calon ? (calon.name || 'suara HP') : 'bawaan HP';
+  u.onstart = function () { statusSuara('Bersuara… (' + namaCalon + ')'); };
+  u.onend = function () {
+    bicaraAntre.shift();
+    bicaraCalonIdx = 0;
+    ucapBerikutnya();
+  };
+  u.onerror = function (ev) {
+    if (ev && (ev.error === 'canceled' || ev.error === 'interrupted')) return;
+    bicaraCalonIdx++;
+    if (bicaraCalonIdx < bicaraCalon.length) {
+      statusSuara('Suara "' + namaCalon + '" gagal, mencoba suara lain… (' + (bicaraCalonIdx + 1) + '/' + bicaraCalon.length + ')');
+      bicaraTimer = setTimeout(ucapBerikutnya, 400);
+    } else {
+      bicaraAntre = [];
+      var semua = [];
+      try { semua = ss.getVoices() || []; } catch (e) {}
+      statusSuara('Mesin suara HP menolak membacakan (' + (ev ? ev.error : '?') + '). ' + semua.length + ' suara dicoba, semua gagal.');
+    }
+  };
+  ss.resume();
+  ss.speak(u);
+}
 function bicara(teks) {
-  if (!suaraAktif) return;
-  if (!('speechSynthesis' in window)) return;
+  if (!suaraAktif) { statusSuara('Suara dimatikan — nyalakan tombol Suara di menu.'); return; }
+  if (!('speechSynthesis' in window)) { statusSuara('HP ini tidak mendukung suara (Web Speech tidak ada).'); return; }
   try {
     if (bicaraTimer) { clearTimeout(bicaraTimer); bicaraTimer = null; }
     var ss = window.speechSynthesis;
+    bicaraAntre = potongTeks(teks);
+    bicaraCalon = daftarCalonSuara();
+    bicaraCalonIdx = 0;
     var mulai = function () {
       try {
-        var u = new SpeechSynthesisUtterance(teks);
-        var s = pilihSuara();
-        if (s) { u.voice = s; u.lang = s.lang; }
-        // Bila HP tidak punya suara Indonesia/Inggris, biarkan lang kosong:
-        // mesin TTS bawaan tetap membacakan teks (logat Inggris) daripada diam.
-        u.rate = 0.9;
-        u.pitch = bahasa === 'en' ? 1.4 : 1.3;
-        u.onerror = function (ev) {
-          if (ev && (ev.error === 'canceled' || ev.error === 'interrupted')) return;
-          try {
-            var u2 = new SpeechSynthesisUtterance(teks);
-            u2.rate = 0.9;
-            ss.speak(u2);
-          } catch (e2) {}
-        };
-        ss.resume();
-        ss.speak(u);
-      } catch (e) {}
+        var semua = ss.getVoices() || [];
+        // Mesin suara HP kadang belum siap saat pertama dibuka — tunggu sebentar.
+        if (semua.length === 0 && bicaraCoba < 3) {
+          bicaraCoba++;
+          statusSuara('Menunggu mesin suara HP… (coba ' + bicaraCoba + '/3)');
+          bicaraTimer = setTimeout(mulai, 600);
+          return;
+        }
+        bicaraCoba = 0;
+        bicaraCalon = daftarCalonSuara();
+        bicaraCalonIdx = 0;
+        statusSuara('Memutar suara… (' + semua.length + ' suara di HP)');
+        ucapBerikutnya();
+      } catch (e) { statusSuara('Gagal bicara (kesalahan).'); }
     };
     if (ss.speaking || ss.pending) {
       ss.cancel();
@@ -492,7 +577,7 @@ function bicara(teks) {
     } else {
       mulai();
     }
-  } catch (e) {}
+  } catch (e) { statusSuara('Gagal bicara (kesalahan).'); }
 }
 if ('speechSynthesis' in window) {
   try {
